@@ -155,25 +155,49 @@
                           (set pos-to-filter-out)))
 
 (defn field-occ-filter [field unit positions]
-  (filter #(= (:color (get-unit field %))
+  (filter
+   (fn [pos]
+     (let [to-unit (get-unit field pos)]
+       (if (:type to-unit)
+         (if (= (:color to-unit)
+                (:color unit))
+           false
+           true)
+         true)))
+   positions))
+
+
+(defn field-occ-filter2 [field unit positions]
+  (filter #(not= (:color (get-unit field %))
               (:color unit))
           positions))
 
 (defn find-possible-moves [field [x y]]
-  (when (some #{[x y]} all-land)
+  (if (some #{[x y]} all-land)
     (if (= (:type (get-unit field [x y])) :scout)
-      (find-possible-moves-scout [x y])
+      (find-possible-moves-scout field [x y])
       (let [t-pos (theory-possible-positions [x y] fun)
-            filter-fn (comp (partial field-occ-filter field (get-unit field [x y]))
-                            out-of-bound-field-filter
+            filter-fn (comp out-of-bound-field-filter
                             position-filter)]
-        (filter-fn t-pos [[x y]])))
-      []))
+        (set (field-occ-filter
+              field
+              (get-unit field [x y])
+              (filter-fn t-pos [[x y]])))))
+      #{}))
 
-(defn check-move [field from to]
+(find-possible-moves full-empty-board [0 0])
+
+#_(let [f full-empty-board
+         field (set-unit f [3 3] {:type :marshal :color :red})
+         ffield (set-unit field [3 2] {:type :marshal :color :red})]
+     (find-possible-moves ffield [3 3]))
+
+
+
+(defn move-unit [field from to]
   (let [from-unit (get-unit field from)
         to-unit (get-unit field to)]
-    (if from-unit
+    (if (:type from-unit)
       (if (can-move (:type from-unit))
         (if (some #{to} (find-possible-moves field from))
           (-> field
@@ -182,16 +206,6 @@
           (assoc field :check-move-error {:from from :to to :type :not-in-possible-move}))
         (assoc field :check-move-error {:form from :to to :type :from-unit-cant-move}))
       (assoc field :check-move-error {:from from :to to :type :no-from-unit}))))
-
-(defn move-unit [field from to]
-  (when (check-move field from to)
-     (let [unit (get-unit field from)
-                 to-unit (get-unit field to)]
-             (-> field
-                 (set-unit , to unit)
-                 (set-unit , from nil)))))
-
-
 
 
 

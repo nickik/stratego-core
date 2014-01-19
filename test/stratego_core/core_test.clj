@@ -49,53 +49,27 @@
            :marshal))))
 
 (deftest move-unit-move-test
-  (is (= (move-unit full-empty-board
-                              [2 1]
-                              [3 3])
-         [:field-empty ])))
-
+  (are [x y] (= (:type (:check-move-error x))
+                y)
+       (move-unit full-empty-board [2 1] [3 3]) :no-from-unit
+       ))
 
 (deftest find-possible-moves-test-simple
   (let [f full-empty-board]
-    (are [x y] (= x y)
+    (are [x y] (= x (set y))
          (find-possible-moves f [0 0]) [[1 0] [0 1]]
          (find-possible-moves f [1 1]) [[2 1] [1 0] [0 1] [1 2]]
          (find-possible-moves f [9 9]) [[9 8] [8 9]]
          (find-possible-moves f [-1 0]) []
          (find-possible-moves f [-153 90]) []
          (find-possible-moves f (rand-nth (vec all-water))) []
-         (find-possible-moves f [3 3]) [[3 2] [2 3] [3 4]])))
+         (find-possible-moves f [3 3]) [[3 2] [2 3] [3 4]] )))
 
 (deftest find-possible-moves-test-with-units
    (let [f full-empty-board
          field (set-unit f [3 3] {:type :marshal :color :red})
-         field (set-unit field [3 2] {:type :marshal :color :red})]
-     (is (= (find-possible-moves field [3 3]) [[2 3] [3 4]]))))
-
-#_(deftest has-unit-filter-test
-  (is (= (has-unit-filter (set-unit full-empty-board [3 2] {:type :test}) [[3 3][3 2]])
-         [3 3])))
-
-#_(deftest can-walk-over-test
-  (is (= (can-walk-over (set-unit full-empty-board [3 3] {:type :test}) [[3 2][3 3][4 3]])
-         [[3 2]])))
-
-#_(deftest can-walk-on-test
-  (is (= (can-walk-on (set-unit full-empty-board
-                                [3 3]
-                                {:type :test :color :blue})
-                      [3 3]
-                      :blue))
-      false)
-  (is (= (can-walk-on (set-unit full-empty-board
-                                [3 3]
-                                {:type :test :color :blue})
-                      [3 3]
-                      :red))
-      true))
-
-
-
+         ffield (set-unit field [3 2] {:type :marshal :color :red})]
+     (is (= (find-possible-moves ffield [3 3]) (set [[2 3] [3 4]])))))
 
 (deftest scout-search-test
   (let [fi full-empty-board]
@@ -107,3 +81,4 @@
          (scout-search {:color :red :type :scout} fi [3 3] [0 (- 1)])  #{[3 2][3 1][3 0]}
          (scout-search {:color :red :type :scout} fi [8 3] [(- 1) 0])  #{[7 3][6 3]})
          ))
+
