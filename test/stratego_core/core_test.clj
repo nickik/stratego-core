@@ -55,8 +55,8 @@
          [:field-empty ])))
 
 
-(deftest find-possible-moves-test-simpe
-  (let [f full-empyt-baord)]
+(deftest find-possible-moves-test-simple
+  (let [f full-empty-board]
     (are [x y] (= x y)
          (find-possible-moves f [0 0]) [[1 0] [0 1]]
          (find-possible-moves f [1 1]) [[2 1] [1 0] [0 1] [1 2]]
@@ -66,15 +66,21 @@
          (find-possible-moves f (rand-nth (vec all-water))) []
          (find-possible-moves f [3 3]) [[3 2] [2 3] [3 4]])))
 
-(deftest has-unit-filter-test
-  (is (= (has-unit-filter (set-unit full-empty-board [3 2] {:type :test}) [[3 3][3 2]])
-         [3 3]))
+(deftest find-possible-moves-test-with-units
+   (let [f full-empty-board
+         field (set-unit f [3 3] {:type :marshal :color :red})
+         field (set-unit field [3 2] {:type :marshal :color :red})]
+     (is (= (find-possible-moves field [3 3]) [[2 3] [3 4]]))))
 
-(deftest can-walk-over-test
+#_(deftest has-unit-filter-test
+  (is (= (has-unit-filter (set-unit full-empty-board [3 2] {:type :test}) [[3 3][3 2]])
+         [3 3])))
+
+#_(deftest can-walk-over-test
   (is (= (can-walk-over (set-unit full-empty-board [3 3] {:type :test}) [[3 2][3 3][4 3]])
          [[3 2]])))
 
-(deftest can-walk-on-test
+#_(deftest can-walk-on-test
   (is (= (can-walk-on (set-unit full-empty-board
                                 [3 3]
                                 {:type :test :color :blue})
@@ -89,10 +95,15 @@
       true))
 
 
-(deftest find-possible-moves-test-with-units
-   (let [f full-empty-board
-         field (set-unit f [3 3] {:type :marshal :color :red})
-         field (set-unit field [3 2] {:type :marshal :color :red})]
-     (is (= (find-possible-moves field [3 3]) [[2 3] [3 4]]))))
 
 
+(deftest scout-search-test
+  (let [fi full-empty-board]
+    (are [x y] (= x y)
+         (scout-search {:color :red :type :scout} fi [1 3] [1 0])      #{[2 3] [3 3]}
+         (scout-search {:color :red :type :scout} fi [1 3] [(- 1) 0])  #{[0 3]}
+         (scout-search {:color :red :type :scout} fi [3 6] [0 1])      #{[3 7][3 8][3 9]}
+         (scout-search {:color :red :type :scout} fi [3 7] [0 1])      #{[3 8][3 9]}
+         (scout-search {:color :red :type :scout} fi [3 3] [0 (- 1)])  #{[3 2][3 1][3 0]}
+         (scout-search {:color :red :type :scout} fi [8 3] [(- 1) 0])  #{[7 3][6 3]})
+         ))

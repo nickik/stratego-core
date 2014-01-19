@@ -84,8 +84,19 @@
                         :water)
         :unit unit}})
 
-(def full-empty-board (apply merge (map creat-field
-                                        all-pos)))
+(def full-empty-board (apply merge (map creat-field all-pos)))
+
+(defn fun [n]
+    (range (dec n) (+ 2 n)))
+
+(defn fun-scout [n]
+  (range (- n board-side) (+ n board-side)))
+
+(defn theory-possible-positions [[x y] f]
+  (concat (map #(vector x %) (f y))
+          (map #(vector % y) (f x))))
+
+
 
 (defn set-unit [field pos unit]
   (assoc-in field [pos :unit] unit))
@@ -96,12 +107,75 @@
 (defn can-move [type]
   (number? (:rank (type figures))))
 
+
+(defn diff-team? [u1 u2]
+  (let [c-u1 (:color u1)
+        c-u2 (:color u2)]
+    (if (or (nil? c-u1)
+            (nil? c-u2))
+      false
+      (not= c-u1 c-u2))))
+
+(defn same-team? [u1 u2]
+  (let [c-u1 (:color u1)
+        c-u2 (:color u2)]
+    (if (or (nil? c-u1)
+            (nil? c-u2))
+      false
+      (= c-u1 c-u2))))
+
+(defn out-of-bound-field-filter [positions]
+  (filter #(some #{%} all-land) positions))
+
+
+(defn scout-search [scout field [x y] direction]
+  (loop [cord [x y] possible []]
+    (let [new-pos (vec (map + cord direction))]
+      (let [to-unit (get-unit field new-pos)]
+        (if (diff-team? scout to-unit)
+          (conj possible new-pos)
+          (if (or (empty? (out-of-bound-field-filter [new-pos]))
+                  (same-team? scout to-unit))
+            (set possible)
+            (recur new-pos (conj possible new-pos))))))))
+
+(defn find-possible-moves-scout
+           "Start for searches in for diffrent direction until it encounters first non-passable objet"
+           [field [x y]]
+           (mapcat (fn [direction]
+                     (scout-search
+                      (get-in field [x y])
+                      field
+                      [x y]
+                      direction))
+                   [[1  0][(- 1) 0][0 1][0 (- 1)]]))
+
+(defn position-filter [positions pos-to-filter-out]
+  (clojure.set/difference (set positions)
+                          (set pos-to-filter-out)))
+
+(defn field-occ-filter [field unit positions]
+  (filter #(= (:color (get-unit field %))
+              (:color unit))
+          positions))
+
+(defn find-possible-moves [field [x y]]
+  (when (some #{[x y]} all-land)
+    (if (= (:type (get-unit field [x y])) :scout)
+      (find-possible-moves-scout [x y])
+      (let [t-pos (theory-possible-positions [x y] fun)
+            filter-fn (comp (partial field-occ-filter field (get-unit field [x y]))
+                            out-of-bound-field-filter
+                            position-filter)]
+        (filter-fn t-pos [[x y]])))
+      []))
+
 (defn check-move [field from to]
   (let [from-unit (get-unit field from)
         to-unit (get-unit field to)]
     (if from-unit
       (if (can-move (:type from-unit))
-        (if (some #{to} (find-possible-move field from))
+        (if (some #{to} (find-possible-moves field from))
           (-> field
               (set-unit , to unit)
               (set-unit , from nil))
@@ -118,82 +192,9 @@
                  (set-unit , from nil)))))
 
 
-(defn field-occ-filter [field unit positions]
-  (filter #(= (:color (get-unit field %))
-              (:color unit))
-          positions))
-
-
-(defn out-of-bound-field-filter [positions]
-  (filter #(some #{%} all-land) positions))
-
-(defn position-filter [positions pos-to-filter-out]
-  (clojure.set/difference (set positions)
-                          (set pos-to-filter-out)))
-
-(defn fun [n]
-    (range (dec n) (+ 2 n)))
-
-(defn fun-scout [n]
-  (range (- n board-side) (+ n board-side)))
-
-(defn has-unit-filter [field positions]
-  (filter #(= nil
-              (:type (get-unit field %)))
-          positions))
-
-(defn can-walk-over [field position]
-  (->> position
-       (out-of-bound-field-filter)
-       (has-unit-filter field)))
-
-(defn can-walk-on [field [x y] color]
-  (let [unit (get-unit field [x y])]
-    (not= (:color unit) color)))
-
-
-(defn theory-possible-positions  [[x y] f]
-  (concat (map #(vector x %) (f y))
-          (map #(vector % y) (f x))))
-
-
-(defn scout-search [field [x y] direction]
-  (loop [cord [x y] possible []]
-    (let [consider-field (map + cord direction)]
-      (if (empty? (can-walk-over field [consider-field]))
-        (recur consider-field (conj possible consider-field))
-        (if (can-walk-on field consider-field (:color (get-unit field [x y])))
-          (conj possible consider-field)
-          possible)))))
-
-
-(scout-search full-empty-board [3 3] [1 0])
-
-
-(defn pos-scout
-  "Start for searches in for diffrent direction until it encounters first non-passable objet"
-  [field [x y]]
-  (map (partial scout-search field [x y]) [[1  0][(- 1) 0][0 1][0 (- 1)]]))
 
 
 
-;;(possible-scout-moves full-empty-board [3 3])
-
-  (comment
-    (defn find-possible-moves [field [x y]]
-      (if (= (get-unit field [x y]) :scout)
-
-        (if (some #{[x y]} all-land)
-          (if (= (get-unit field [x y]) :scout)
-            (possible-scout-moves field [x y])
-            (let [t-pos (theory-possible-positions [x y] fun)
-                  filter-fn (comp (partial field-occ-filter field (get-unit field [x y]))
-                                  out-of-bound-field-filter
-                                  position-filter)]
-              (filter-fn t-pos [[x y]]))
-            []))))
-
-    (defn player-win [board]
-      true))
-
-
+(def ttf (set-unit full-empty-board
+                     [3 3]
+                     {:color :red :type :scout}))
