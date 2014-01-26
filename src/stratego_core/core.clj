@@ -84,9 +84,10 @@
                         :water)
         :unit unit}})
 
-(def full-empty-board (apply merge (map creat-field all-pos)))
+(defn creat-board [positions]
+  (apply merge (map creat-field positions)))
 
-(println full-empty-board)
+(def full-empty-board (apply merge (map creat-field all-pos)))
 
 (defn fun [n]
     (range (dec n) (+ 2 n)))
@@ -128,7 +129,6 @@
 
 (defn out-of-bound-field-filter [positions]
   (filter #(some #{%} all-land) positions))
-
 
 (defn scout-search [scout field [x y] direction]
   (loop [cord [x y] possible []]
@@ -187,15 +187,6 @@
               (filter-fn t-pos [[x y]])))))
       #{}))
 
-(find-possible-moves full-empty-board [0 0])
-
-#_(let [f full-empty-board
-         field (set-unit f [3 3] {:type :marshal :color :red})
-         ffield (set-unit field [3 2] {:type :marshal :color :red})]
-     (find-possible-moves ffield [3 3]))
-
-
-
 (defn move-unit [field from to]
   (let [from-unit (get-unit field from)
         to-unit (get-unit field to)]
@@ -209,10 +200,39 @@
         (assoc field :check-move-error {:form from :to to :type :from-unit-cant-move}))
       (assoc field :check-move-error {:from from :to to :type :no-from-unit}))))
 
+(defn get-type-list []
+  (mapcat (fn [[unit {:keys [count]}]]
+              (repeat count unit)) figures))
 
+(defn creat-units-for-color [color]
+  (map (fn [type] {:type type :color color})
+       (get-type-list)))
 
-(def ttf (set-unit full-empty-board
-                     [3 3]
-                     {:color :red :type :scout}))
+(defn fill-with-random-units [player-pos color]
+  (let [player-board (creat-board player-pos)]
+    (reduce (fn [b [unit pos]]
+              (set-unit b pos unit))
+            player-board
+            (partition 2 (interleave (creat-units-for-color color)
+                                     (shuffle player-pos))))))
 
-(pprint (macroexpand (quote (dotimes [i 5] i))))
+(defn random-board-with-units []
+  (merge (fill-with-random-units player-pos :red)
+         (creat-board middle-part)
+         (fill-with-random-units player2-pos :blue)))
+
+(defn count-units [board color]
+  (frequencies
+   (filter identity (map (fn [[key {:keys [unit]}]]
+                           (when (= (:color unit)
+                                    color)
+                             (:type unit)))
+                         board))))
+
+(defn count-unit [board type color]
+  (type (count-units board color)))
+
+(defn strip-for-player [board color-to-strip]
+    (reduce (fn [board key]
+              (set-unit board key nil)) board (keys board)))
+

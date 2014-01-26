@@ -1,9 +1,6 @@
 (ns stratego-core.core-test
   (:require [clojure.test :refer :all]
-            [stratego-core.core :refer :all]
-            [simple-check.core :as sc]
-            [simple-check.generators :as gen]
-            [simple-check.properties :as prop]))
+            [stratego-core.core :refer :all]))
 
 (deftest wins-against-test-true
   (are [fight] (partial = true)
@@ -91,4 +88,15 @@
          (scout-search {:color :red :type :scout} fi [3 7] [0 1])      #{[3 8][3 9]}
          (scout-search {:color :red :type :scout} fi [3 3] [0 (- 1)])  #{[3 2][3 1][3 0]}
          (scout-search {:color :red :type :scout} fi [8 3] [(- 1) 0])  #{[7 3][6 3]})))
+
+(deftest count-unit-test
+  (let [board (random-board-with-units)]
+    (are [x y] (= x y)
+         (count-unit board :miner :red) (:count (:miner figures))
+         (count-unit board :scout :red) (:count (:scout figures))
+         (count-unit board :major :red) (:count (:major figures))
+         (count-unit board :bomb :red)  (:count (:bomb figures))
+         (count-unit board :lieutenant :red) (:count (:lieutenant figures))
+         (count-unit board :captain :red)    (:count (:captain figures))
+         (count-unit board :spy :red)      (:count (:spy figures)))))
 
