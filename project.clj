@@ -7,7 +7,9 @@
                  [org.clojure/core.match "0.2.1"]
                  [liberator "0.10.0"]
                  [compojure "1.1.6"]
-                 [hiccup "1.0.4"]]
+                 [hiccup "1.0.4"]
+                 [print-foo "0.4.2"]
+                 #_[reiddraper/simple-check "0.5.5"]]
   :plugins [[lein-ring "0.8.10"]]
   :ring {:handler stratego-core.server/handler
          :port 80

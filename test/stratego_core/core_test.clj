@@ -1,6 +1,9 @@
 (ns stratego-core.core-test
   (:require [clojure.test :refer :all]
-            [stratego-core.core :refer :all]))
+            [stratego-core.core :refer :all]
+            [simple-check.core :as sc]
+            [simple-check.generators :as gen]
+            [simple-check.properties :as prop]))
 
 (deftest wins-against-test-true
   (are [fight] (partial = true)
@@ -51,8 +54,7 @@
 (deftest move-unit-move-test
   (are [x y] (= (:type (:check-move-error x))
                 y)
-       (move-unit full-empty-board [2 1] [3 3]) :no-from-unit
-       ))
+       (move-unit full-empty-board [2 1] [3 3]) :no-from-unit))
 
 (deftest find-possible-moves-test-simple
   (let [f full-empty-board]
@@ -64,6 +66,15 @@
          (find-possible-moves f [-153 90]) []
          (find-possible-moves f (rand-nth (vec all-water))) []
          (find-possible-moves f [3 3]) [[3 2] [2 3] [3 4]] )))
+
+;;;;;;;;;;;;;;; Generative Testing ;;;;;;;;;;;;;;
+;; This test should randomaly put a unit on the field and jack
+;; that possible moves never outside of the field or in the water.
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
 (deftest find-possible-moves-test-with-units
    (let [f full-empty-board
@@ -79,6 +90,5 @@
          (scout-search {:color :red :type :scout} fi [3 6] [0 1])      #{[3 7][3 8][3 9]}
          (scout-search {:color :red :type :scout} fi [3 7] [0 1])      #{[3 8][3 9]}
          (scout-search {:color :red :type :scout} fi [3 3] [0 (- 1)])  #{[3 2][3 1][3 0]}
-         (scout-search {:color :red :type :scout} fi [8 3] [(- 1) 0])  #{[7 3][6 3]})
-         ))
+         (scout-search {:color :red :type :scout} fi [8 3] [(- 1) 0])  #{[7 3][6 3]})))
 

@@ -86,6 +86,8 @@
 
 (def full-empty-board (apply merge (map creat-field all-pos)))
 
+(println full-empty-board)
+
 (defn fun [n]
     (range (dec n) (+ 2 n)))
 
@@ -212,3 +214,5 @@
 (def ttf (set-unit full-empty-board
                      [3 3]
                      {:color :red :type :scout}))
+
+(pprint (macroexpand (quote (dotimes [i 5] i))))
